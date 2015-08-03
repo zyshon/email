@@ -3,6 +3,7 @@ package com.sunzy.email;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +36,7 @@ public class MailSender {
 	private String host = ""; // smtp服务器
 	private List<String> recipientList = new ArrayList<String>(); // 收件人地址
 	private List<FilePair> fileList = null;
-	private int port;
+	private int port=25;
 	private String account = ""; // 用户名
 	private String password = ""; // 密码
 	private String title = ""; // 邮件标题
@@ -114,7 +115,13 @@ public class MailSender {
 	public void addRecipient(String recipient) {
 		recipientList.add(recipient);
 	}
-
+	/**
+	 * 批量添加邮件接收人
+	 * @param recipients 邮件接收人
+	 */
+	public void addRecipients(String[] recipients) {
+		recipientList.addAll(Arrays.asList(recipients));
+	}
 	/**
 	 * 添加附件(附件重命名)
 	 * @param file 附件
@@ -130,7 +137,7 @@ public class MailSender {
 	}
 	/**
 	 * 添加附件(附件重命名)
-	 * @param file 附件
+	 * @param url 网络资源URL
 	 * @param name 附件重命名
 	 */
 	public void addAffix(URL url, String name) {
@@ -251,7 +258,7 @@ public class MailSender {
 		MailAuthenticator authenticator = new MailAuthenticator(account,password);
 		Properties pros = new Properties();    
 		pros.put("mail.smtp.host", host);   
-	    if(port!=0)
+	    if(port!=25)
 	    	pros.put("mail.smtp.port", port);    
 	    pros.put("mail.smtp.auth", true); 
 		MailcapCommandMap mc = (MailcapCommandMap) CommandMap
@@ -293,11 +300,13 @@ public class MailSender {
 				if (fileList!=null) {
 					for (FilePair filePair : fileList) {
 						BodyPart messageBodyPart = new MimeBodyPart();
-						File affix = filePair.getFile();
 						String affixName = filePair.getName();
-						DataSource source = new FileDataSource(affix);
 						// 添加附件的内容
-						messageBodyPart.setDataHandler(new DataHandler(source));
+						// 添加附件的内容
+						if(filePair.getFile()!=null)
+							messageBodyPart.setDataHandler(new DataHandler(new FileDataSource(filePair.getFile())));
+						else
+							messageBodyPart.setDataHandler(new DataHandler(filePair.getUrl()));
 						// 添加附件的标题
 						// 这里很重要，通过下面的Base64编码的转换可以保证你的中文附件标题名在发送时不会变成乱码
 						messageBodyPart.setFileName("=?UTF8?B?"+ Base64.getEncoder().encodeToString(affixName.getBytes()) + "?=");
